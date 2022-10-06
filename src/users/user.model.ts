@@ -30,7 +30,7 @@ export class User extends Model<User, IUserInput> {
   public role!: string;
 
   @BelongsToMany(() => Role, ()=> UserRoles)
-  users: Role[];
+  roles: Role[];
 
   @CreatedAt
   public readonly createdAt!: Date;
