@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { HttpStatus } from '@nestjs/common/enums';
-import { HttpException } from '@nestjs/common/exceptions';
+import { HttpException, UnauthorizedException } from '@nestjs/common/exceptions';
 import { JwtService } from '@nestjs/jwt/dist';
 import { CreateUserDto } from 'src/users/dto/create.user.dto';
 import { UsersService } from 'src/users/users.service';
@@ -16,8 +16,10 @@ export class AuthService {
     ){}
 
   async login(userDto: CreateUserDto) {
-    throw new Error('Method not implemented.');
+    const user = await this.validateUser(userDto)
+    return this.generateToken(user)
   }
+  
   async registration(userDto: CreateUserDto) {
     const candidate = await this.userService.getUsersByEmail(userDto.email)
     if (candidate) {
@@ -29,10 +31,24 @@ export class AuthService {
 
   }
 
-  async generateToken(user: User) {
+  private async generateToken(user: User) {
     const payload = {email: user.email, id: user.id, roles: user.roles}
     return {
       token: this.jwtService.sign(payload)
     }
+  }
+
+  private async validateUser(userDto: CreateUserDto) {
+    const user = await this.userService.getUsersByEmail(userDto.email)
+    if (!user){
+      throw new UnauthorizedException({meassage: 'Некорректный email или пароль'})
+    }
+    const passwordEquals = await bcrypt.compare(userDto.password, user.password)
+
+    if (user && passwordEquals) {
+      return user
+    }
+
+    throw new UnauthorizedException({meassage: 'Некорректный email или пароль'})
   }
 }
